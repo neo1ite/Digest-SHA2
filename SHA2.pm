@@ -1,43 +1,47 @@
 package Digest::SHA2;
 
+use base 'Digest::base';
 use strict;
 use warnings;
-use MIME::Base64;
 require Exporter;
 
-our @EXPORT_OK = qw(new hashsize reset add addfile digest hexdigest base64digest);
-our $VERSION = '1.0.0';
-our @ISA = qw(Exporter);
+# addfile() and b64digest() already implemented by Digest::base
+our @EXPORT_OK = qw(new hashsize rounds clone reset add digest hexdigest base64digest);
+our @EXPORT = qw();
+our $VERSION = '1.1.0';
+#our @ISA = qw(Exporter);
 
 require XSLoader;
 XSLoader::load('Digest::SHA2', $VERSION);
 
 # Preloaded methods go here.
 
-sub addfile
-{
-    my ($self, $handle) = @_;
-    my ($package, $file, $line) = caller;
-
-    if (!ref($handle)) {
-        $handle = "$package::$handle" unless ($handle =~ /(\:\:|\')/);
-    }
-
-    while (read($handle, my $data, 1048576)) {
-        $self->add($data);
-    }
-}
+#sub addfile
+#{
+#    my ($self, $handle) = @_;
+#    my ($package, $file, $line) = caller;
+#
+#    if (!ref($handle)) {
+#        $handle = "$package::$handle" unless ($handle =~ /(\:\:|\')/);
+#    }
+#
+#    while (read($handle, my $data, 4*1024)) {
+#        $self->add($data);
+#    }
+#}
 
 sub digest
 {
-    my $self = shift;
+    my ($self) = @_;
     return pack("H*", $self->hexdigest());
 }
 
-sub base64digest
+sub base64digest   # legacy
 {
-    my $self = shift;
-    return encode_base64($self->digest(), "");
+    print STDERR "\nWARNING: base64digest() is now deprecated, and ";
+    print STDERR "will be removed in future\n";
+    print STDERR "releases; please use b64digest() instead.\n\n";
+    return shift->b64digest(@_);
 }
 
 1;
@@ -74,19 +78,22 @@ This new implementation uses the C source of Aaron Gifford.
     $sha2obj->addfile(*HANDLE);
     $sha2obj->reset();
 
+    $sha_clone = $sha2obj->clone();
     $digest = $sha2obj->digest();
     $digest = $sha2obj->hexdigest();
-    $digest = $sha2obj->base64digest();
-    
-    $digest = $sha2obj->hashsize();
+    $digest = $sha2obj->b64digest();
+    $digest = $sha2obj->base64digest();  # deprecated
 
-=head1 DESCRIPTION
+    $digest = $sha2obj->hashsize();
+    $digest = $sha2obj->rounds();
+
+=head1 METHODS
 
 SHA-2 supports the following functions:
 
 =over
 
-=item B<new($hashlength)>
+=item B<new [$hashlength]>
 
 Creates a SHA-2 object, where B<$hashlength> represents the hash output
 length; valid values for B<$hashlength> are 256, 384, and 512 only.
@@ -96,26 +103,50 @@ For example, to specify SHA-512, use
 
         $sha2obj = new Digest::SHA2 512;
 
-To specify the default SHA-256, just use
+To specify SHA-256, use
+
+        $sha2obj = new Digest::SHA2 256;
+
+or just simply
 
         $sha2obj = new Digest::SHA2;
 
 =item B<hashsize()>
 
-Returns the digest size (in bits) of the hash output used
+Returns the digest size (in bits) of the hash output used; valid sizes
+are 256, 384, and 512 only.
+
+=item B<rounds()>
+
+Returns the number of rounds (1, in this case) used to generate the
+hash output; this is included only so that B<Digest::SHA2> is
+consistent with other one-way hash functions that have variable number
+of rounds, like B<Haval> and B<Tiger>.
+
+Haval can uses 3, 4, or 5 rounds, with 5 different output lengths: 128,
+160, 192, 224, and 256 bits, thereby, having 15 variants. Tiger, on the
+other hand, outputs 192 bits of digest, using 3 rounds; but for added
+security, can also use 4 rounds.
 
 =item B<add(LIST)>
 
 Hashes a string or a list of strings
 
+For example,
+
+        $sha2obj->add($string1);
+        $sha2obj->add($string2, $string3, $string4);
+
 =item B<addfile(*HANDLE)>
 
-Hashes a file
+Hashes a file whose file handle is B<HANDLE>
 
 =item B<reset()>
 
-Re-initializes the hash state. Before calculating another digest, the
-hash state must be refreshed.
+Re-initializes the hash state of the SHA-2 object. Before calculating
+another digest, B<reset()> refreshes the hash state, and is, therefore,
+functionally equivalent to the B<new()> method, except that no SHA-2
+object is created.
 
 =item B<digest()>
 
@@ -125,10 +156,25 @@ Generates the hash output as a binary string
 
 Generates a hexadecimal representation of the hash output
 
-=item B<base64digest()>
+=item B<base64digest() (deprecated)>
 
-Generates a base64 representation of the hash output. B<MIME::Base64>
-must be installed first for this function to work.
+This will be removed in future releases; use B<b64digest()> instead.
+
+=item B<b64digest()>
+
+Generates a base64 representation of the hash output
+
+=item B<clone()>
+
+Returns a copy of the SHA-2 object; useful when you want to preserve an
+intermediate value of the digest
+
+For example,
+
+        my $clone = $sha2obj->clone();   # clone SHA-2 object
+
+        my $sig = $sha2obj->clone->hexdigest;
+        print "partial digest: $sig\n";
 
 =back
 
@@ -146,7 +192,7 @@ must be installed first for this function to work.
     my $string3 = "This is a string.This is another string.";
 
     my $sha2obj = new Digest::SHA2 512;
-    print "hash size=", $sha2obj->hashsize, "\n";
+    print "hash size = ", $sha2obj->hashsize, " bits\n";
 
     $sha2obj->add($string1);
     my $digest = $sha2obj->hexdigest();
@@ -158,14 +204,14 @@ must be installed first for this function to work.
     my $digest2 = $sha2obj->hexdigest();
     print "Hash string1 and then hash string2\n";
     print "$digest2\n\n";
-    
+
     $sha2obj->reset();
     $sha2obj->add($string1);
     $sha2obj->add($string2);
     my $digest3 = $sha2obj->hexdigest();
     print "Hash string1 and then hash string2\n";
     print "$digest3\n\n";
-    
+
     $sha2obj->reset();
     $sha2obj->add($string3);
     print "Hash the two concatenated strings\n";
@@ -182,13 +228,13 @@ must be installed first for this function to work.
     use MIME::Base64;
     use Digest::SHA2;
 
-    my $file = "strings.pl";
+    my $file = "strings";
     open INFILE, $file or die "$file not found";
 
     my $sha2obj = new Digest::SHA2;  # defaults to 256-bit output
     $sha2obj->addfile(*INFILE);
     my $hex_output = $sha2obj->hexdigest();
-    my $base64_output = $sha2obj->base64digest();
+    my $base64_output = $sha2obj->b64digest();
     close INFILE;
     print "$file\n";
     print "$hex_output\n";
@@ -198,6 +244,23 @@ must be installed first for this function to work.
 
 See the "examples" and "t" directories for more examples.
 
+=head1 OTHER IMPLEMENTATION
+
+Although this module appeared earlier in CPAN than Mark Shelor's
+B<Digest::SHA>, his module is, nevertheless, notable because it also
+includes the B<SHA-1> algorithm. This makes his module the most
+comprehensive implementation of the SHA family.
+
+=head1 DIGEST SPEED
+
+Please consult the file, COMPARISON, for comparison of various one-way
+hash functions with digest lengths of 256, 384, and 512 bits.
+
+=head1 ACKNOWLEDGEMENT
+
+I used the C source of Aaron Gifford as backend for this Perl
+implementation.
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2003 Julius C. Duque. Please read contact.html that comes
@@ -205,11 +268,6 @@ with this distribution for details on how to contact the author.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as the GNU General Public License.
-
-=head1 ACKNOWLEDGEMENT
-
-I used the C source of Aaron Gifford as backend for this Perl
-implementation.
 
 =cut
 

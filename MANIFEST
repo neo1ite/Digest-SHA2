@@ -1,15 +1,23 @@
 _sha2.c
+CAVEAT
 Changes
 comments.jpg
+COMPARISON
 contact.html
 contact.jpg
-examples/files.pl
-examples/strings.pl
+examples/clone
+examples/finddups/finddups
+examples/finddups/README
+examples/finddups/sha
+examples/finddups/testfile1
+examples/finddups/testfile2
+examples/hashfile
+examples/README
+examples/strings
 INSTALL
 LICENSE
 Makefile.PL
 MANIFEST			This list of files
-META.yml
 ppport.h
 README
 SHA2.pm
@@ -46,4 +54,6 @@ t/file11.t
 t/file12.dat
 t/file12.t
 t/loading.t
+t/strings.t
 typemap
+META.yml                                 Module meta-data (added by MakeMaker)

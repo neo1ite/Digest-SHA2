@@ -1,5 +1,7 @@
 #!/usr/local/bin/perl
 
+# Copyright (C) 2003 Julius C. Duque
+
 use diagnostics;
 use strict;
 use warnings;
@@ -13,7 +15,8 @@ my $string4 = "abc";
 my $testdigest = "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f";
 
 my $sha2obj = new Digest::SHA2 512;
-print "hash size = ", $sha2obj->hashsize, "\n";
+print "hash size = ", $sha2obj->hashsize, " bits\n";
+print "number of rounds = ", $sha2obj->rounds, "\n";
 
 $sha2obj->add($string1);
 my $digest = $sha2obj->hexdigest();

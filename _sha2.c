@@ -291,7 +291,7 @@ char* SHA512_Data();
 #endif
 
 /*
- * Define the followingsha2_* types to types of the correct length on
+ * Define the following sha2_* types to types of the correct length on
  * the native archtecture.   Most BSD systems and Linux define u_intXX_t
  * types.  Machines with very recent ANSI C headers, can use the
  * uintXX_t definintions from inttypes.h by defining SHA2_USE_INTTYPES_H

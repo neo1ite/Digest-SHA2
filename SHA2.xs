@@ -9,6 +9,7 @@ typedef struct sha2 {
     SHA384_CTX ctx384;
     SHA512_CTX ctx512;
     int digestsize;
+    int rounds;
 }* Digest__SHA2;
 
 MODULE = Digest::SHA2		PACKAGE = Digest::SHA2
@@ -16,7 +17,6 @@ PROTOTYPES: DISABLE
 
 Digest::SHA2
 new(class, hashlength=256)
-    SV* class
     int hashlength;
 
     CODE:
@@ -28,12 +28,13 @@ new(class, hashlength=256)
                 break;
 
             default:
-                croak("\nAcceptable hash sizes are 356, 384, and 512 only\n");
+                croak("\nAcceptable hash sizes are 256, 384, and 512 only\n");
                 break;
         }
 
         Newz(0, RETVAL, 1, struct sha2);
         RETVAL->digestsize = hashlength;
+        RETVAL->rounds = 1;
 
         switch (RETVAL->digestsize) {
             case 256:
@@ -53,11 +54,33 @@ new(class, hashlength=256)
     OUTPUT:
         RETVAL
 
+Digest::SHA2
+clone(self)
+    Digest::SHA2 self;
+
+    CODE:
+    {
+        Newz(0, RETVAL, 1, struct sha2);
+        Copy(self, RETVAL, 1, struct sha2);
+    }
+
+    OUTPUT:
+        RETVAL
+
 int
 hashsize(self)
     Digest::SHA2 self
     CODE:
         RETVAL = self->digestsize;
+
+    OUTPUT:
+        RETVAL
+
+int
+rounds(self)
+    Digest::SHA2 self
+    CODE:
+        RETVAL = self->rounds;
 
     OUTPUT:
         RETVAL
@@ -81,7 +104,7 @@ reset(self)
                 break;
         }
     }
-        
+
 void
 add(self, ...)
     Digest::SHA2 self
@@ -115,9 +138,10 @@ hexdigest(self)
     Digest::SHA2 self
     CODE:
     {
+        RETVAL = newSVpv("", 64);  /* defaults to SHA-256 */
+
         switch (self->digestsize) {
             case 256:
-                RETVAL = newSVpv("", 64);
                 SHA256_End(&self->ctx256, SvPV_nolen(RETVAL));
                 break;
 
