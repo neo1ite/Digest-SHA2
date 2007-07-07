@@ -8,7 +8,7 @@ require Exporter;
 # addfile() and b64digest() already implemented by Digest::base
 our @EXPORT_OK = qw(new hashsize rounds clone reset add digest hexdigest base64digest);
 our @EXPORT = qw();
-our $VERSION = '1.1.0';
+our $VERSION = '1.1.1';
 #our @ISA = qw(Exporter);
 
 require XSLoader;
@@ -50,7 +50,15 @@ __END__
 
 =head1 NAME
 
-Digest::SHA2 - A variable-length one-way hash function
+Digest::SHA2 - A variable-length one-way hash function (deprecated in favor of L<Digest::SHA>)
+
+=head1 DEPRECATED
+
+This module has numerious known bugs, is not compatable with the
+L<Digest> interface and its functionality is a subset of the
+functionality of L<Digest::SHA> (which is in perl core as of 5.9.3).
+
+Please use L<Digest::SHA> instead of this module in new and old code.
 
 =head1 ABSTRACT
 
@@ -243,13 +251,6 @@ For example,
 =head1 MORE EXAMPLES
 
 See the "examples" and "t" directories for more examples.
-
-=head1 OTHER IMPLEMENTATION
-
-Although this module appeared earlier in CPAN than Mark Shelor's
-B<Digest::SHA>, his module is, nevertheless, notable because it also
-includes the B<SHA-1> algorithm. This makes his module the most
-comprehensive implementation of the SHA family.
 
 =head1 DIGEST SPEED
 

@@ -1,3 +1,7 @@
+1.1.1    2007 July 7
+         - Added a note in the pod that this module is deprecated in favor
+           of Digest::SHA
+
 1.1.0    2003 December 5
          - tweaked test scripts
          - added more examples
